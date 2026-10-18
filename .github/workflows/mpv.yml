@@ -78,8 +78,10 @@ jobs:
 
     - name: Package (mpv + ffmpeg libs + run script)
       run: |
-        mkdir -p pkg/opt/ffmpeg-v4l2r
+        mkdir -p pkg/opt/ffmpeg-v4l2r/lib
         sudo cp -a /opt/ffmpeg-v4l2r/. pkg/opt/ffmpeg-v4l2r/
+        sudo cp -a /usr/local/lib/libdisplay-info.so* /usr/local/lib/libplacebo.so* /usr/local/lib/libshaderc-shared.so* /usr/local/lib/libshaderc_shared.so* pkg/opt/ffmpeg-v4l2r/lib/ 2>/dev/null || true
+        sudo chown -R $(id -u):$(id -g) pkg
         cp mpv-src/build/mpv pkg/
         cat > pkg/run-mpv.sh <<'EOF'
         #!/bin/sh
