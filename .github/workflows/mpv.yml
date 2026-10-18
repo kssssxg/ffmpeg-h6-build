@@ -80,7 +80,21 @@ jobs:
       run: |
         mkdir -p pkg/opt/ffmpeg-v4l2r/lib
         sudo cp -a /opt/ffmpeg-v4l2r/. pkg/opt/ffmpeg-v4l2r/
-        sudo bash -c 'cp -a /usr/local/lib/libdisplay-info.so* /usr/local/lib/libplacebo.so* /usr/local/lib/aarch64-linux-gnu/libdisplay-info.so* /usr/local/lib/aarch64-linux-gnu/libplacebo.so* pkg/opt/ffmpeg-v4l2r/lib/ 2>/dev/null || true; cp -a /usr/lib/aarch64-linux-gnu/libshaderc.so* pkg/opt/ffmpeg-v4l2r/lib/ 2>/dev/null || true'
+        # Bundle every non-base-system shared lib mpv links (libdisplay-info, libplacebo, libshaderc, etc.)
+        sudo bash -c '
+          set -e
+          LIBDIR=pkg/opt/ffmpeg-v4l2r/lib
+          ldd mpv-src/build/mpv | awk "{print \$3}" | grep -E "^/" | while read so; do
+            case "$so" in
+              /lib/aarch64-linux-gnu/libc.so*|/lib/aarch64-linux-gnu/libm.so*|/lib/aarch64-linux-gnu/libpthread*|/lib/aarch64-linux-gnu/libdl*|/lib/aarch64-linux-gnu/librt*|/lib/aarch64-linux-gnu/libgcc_s.so*|/lib/aarch64-linux-gnu/libstdc++.so*) ;;
+              *) cp -Ln "$so" "$LIBDIR/" ;;
+            esac
+          done
+          # also pull libdisplay-info + libplacebo explicitly wherever they live
+          find /usr/local/lib /usr/lib/aarch64-linux-gnu -maxdepth 1 -name "libdisplay-info.so*" -exec cp -Ln {} "$LIBDIR/" \; 2>/dev/null || true
+          find /usr/local/lib /usr/lib/aarch64-linux-gnu -maxdepth 1 -name "libplacebo.so*" -exec cp -Ln {} "$LIBDIR/" \; 2>/dev/null || true
+          chown -R $(id -u):$(id -g) pkg
+        '
         sudo chown -R $(id -u):$(id -g) pkg
         cp mpv-src/build/mpv pkg/
         cat > pkg/run-mpv.sh <<'EOF'
