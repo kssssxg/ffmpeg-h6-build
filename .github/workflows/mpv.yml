@@ -17,7 +17,7 @@ jobs:
           libdrm-dev libudev-dev libv4l-dev \
           libass-dev liblcms2-dev libjpeg-dev \
           libegl1-mesa-dev libgbm-dev libwayland-dev wayland-protocols \
-          libasound2-dev cmake python3-pip libshaderc-dev libunwind-dev libvulkan-dev libdisplay-info-dev
+          libasound2-dev cmake python3-pip libshaderc-dev libunwind-dev libvulkan-dev libdisplay-info-dev libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev
 
     - name: Build libdisplay-info (if apt lacks it)
       run: |
@@ -71,7 +71,7 @@ jobs:
           -Dcdda=disabled -Ddvbin=disabled -Ddvdnav=disabled \
           -Dpulse=disabled -Djack=disabled \
           -Dvaapi=disabled -Dvdpau=disabled -Dvulkan=disabled -Dshaderc=disabled \
-          -Dx11=disabled -Dxv=disabled \
+          -Dx11=enabled -Dxv=disabled \
           -Dgl=enabled -Dgbm=enabled -Ddrm=enabled -Dwayland=disabled \
           -Dmanpage-build=disabled -Dhtml-build=disabled -Dpdf-build=disabled
         ninja -C build
