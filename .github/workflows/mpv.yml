@@ -17,7 +17,18 @@ jobs:
           libdrm-dev libudev-dev libv4l-dev \
           libass-dev liblcms2-dev libjpeg-dev \
           libegl1-mesa-dev libgbm-dev libwayland-dev wayland-protocols \
-          libasound2-dev cmake python3-pip libshaderc-dev libunwind-dev libvulkan-dev
+          libasound2-dev cmake python3-pip libshaderc-dev libunwind-dev libvulkan-dev libdisplay-info-dev
+
+    - name: Build libdisplay-info (if apt lacks it)
+      run: |
+        if ! pkg-config --exists libdisplay-info; then
+          git clone --depth 1 https://gitlab.freedesktop.org/emersion/libdisplay-info.git
+          cd libdisplay-info
+          meson setup build --buildtype=release -Dprefix=/usr/local
+          ninja -C build
+          sudo ninja -C build install
+          sudo ldconfig
+        fi
 
     - name: Build libplacebo v7.360.1
       run: |
