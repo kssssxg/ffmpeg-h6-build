@@ -1,0 +1,75 @@
+name: Build mpv for Allwinner H6 (v4l2request)
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+    - name: Install build deps
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config meson ninja-build git \
+          libdrm-dev libudev-dev libv4l-dev \
+          libass-dev libplacebo-dev liblcms2-dev libjpeg-dev \
+          libegl1-mesa-dev libgbm-dev libwayland-dev wayland-protocols \
+          libasound2-dev
+
+    - name: Build FFmpeg (v4l2request) as shared dependency
+      run: |
+        git clone --depth 1 https://github.com/Kwiboo/FFmpeg.git -b v4l2request-2024-v2 ffmpeg-hw
+        cd ffmpeg-hw
+        ./configure --prefix=/opt/ffmpeg-v4l2r \
+          --enable-v4l2-request --enable-libdrm --enable-libudev \
+          --enable-shared --disable-static \
+          --disable-programs --disable-doc --disable-debug
+        make -j$(nproc)
+        sudo make install
+
+    - name: Checkout mpv (philipl v4l2request branch)
+      uses: actions/checkout@v4
+      with:
+        repository: philipl/mpv
+        ref: v4l2request
+        path: mpv-src
+
+    - name: Build mpv
+      run: |
+        cd mpv-src
+        export PKG_CONFIG_PATH=/opt/ffmpeg-v4l2r/lib/pkgconfig:$PKG_CONFIG_PATH
+        meson setup build --buildtype=release \
+          -Dc_link_args="['-Wl,-rpath,/opt/ffmpeg-v4l2r/lib','-Wl,--enable-new-dtags']" \
+          -Dgpl=true -Dlibmpv=true \
+          -Dlua=disabled -Djavascript=disabled \
+          -Dcdda=disabled -Ddvbin=disabled -Ddvdnav=disabled \
+          -Dpulse=disabled -Djack=disabled \
+          -Dvaapi=disabled -Dvdpau=disabled -Dvulkan=disabled -Dshaderc=disabled \
+          -Dx11=disabled -Dxv=disabled \
+          -Dgl=enabled -Dgbm=enabled -Ddrm=enabled -Dwayland=enabled \
+          -Dmanpage-build=disabled -Dhtml-build=disabled -Dpdf-build=disabled
+        ninja -C build
+
+    - name: Package (mpv + ffmpeg libs + run script)
+      run: |
+        mkdir -p pkg/opt/ffmpeg-v4l2r
+        sudo cp -a /opt/ffmpeg-v4l2r/. pkg/opt/ffmpeg-v4l2r/
+        cp mpv-src/build/mpv pkg/
+        cat > pkg/run-mpv.sh <<'EOF'
+        #!/bin/sh
+        # usage: ./run-mpv.sh video.mp4
+        DIR="$(cd "$(dirname "$0")" && pwd)"
+        export LD_LIBRARY_PATH="$DIR/opt/ffmpeg-v4l2r/lib:$LD_LIBRARY_PATH"
+        exec "$DIR/mpv" --vo=gpu --gpu-context=drm --hwdec=v4l2request "$@"
+        EOF
+        chmod +x pkg/run-mpv.sh
+        tar -C pkg -czf mpv-h6-v4l2request.tar.gz .
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: mpv-arm64-v4l2request
+        path: mpv-h6-v4l2request.tar.gz
