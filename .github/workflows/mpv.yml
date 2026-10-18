@@ -15,9 +15,22 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential pkg-config meson ninja-build git \
           libdrm-dev libudev-dev libv4l-dev \
-          libass-dev libplacebo-dev liblcms2-dev libjpeg-dev \
+          libass-dev liblcms2-dev libjpeg-dev \
           libegl1-mesa-dev libgbm-dev libwayland-dev wayland-protocols \
-          libasound2-dev
+          libasound2-dev cmake python3-pip
+
+    - name: Build libplacebo v7.360.1
+      run: |
+        git clone --depth 1 https://github.com/haasn/libplacebo.git -b v7.360.1 libplacebo
+        cd libplacebo
+        meson setup build --buildtype=release \
+          -Dprefix=/usr/local \
+          -Dvulkan=disabled -Dopengl=disabled -Dd3d11=disabled \
+          -Dshaderc=enabled -Dglslang=disabled \
+          -Dtests=false -Dbench=false
+        ninja -C build
+        sudo ninja -C build install
+        sudo ldconfig
 
     - name: Build FFmpeg (v4l2request) as shared dependency
       run: |
@@ -40,9 +53,8 @@ jobs:
     - name: Build mpv
       run: |
         cd mpv-src
-        export PKG_CONFIG_PATH=/opt/ffmpeg-v4l2r/lib/pkgconfig:$PKG_CONFIG_PATH
+        export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/ffmpeg-v4l2r/lib/pkgconfig:$PKG_CONFIG_PATH
         meson setup build --buildtype=release \
-          -Dc_link_args="['-Wl,-rpath,/opt/ffmpeg-v4l2r/lib','-Wl,--enable-new-dtags']" \
           -Dgpl=true -Dlibmpv=true \
           -Dlua=disabled -Djavascript=disabled \
           -Dcdda=disabled -Ddvbin=disabled -Ddvdnav=disabled \
