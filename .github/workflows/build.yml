@@ -1,0 +1,46 @@
+name: Build FFmpeg for Allwinner H6
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04-arm # native ARM64 server
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential pkg-config libdrm-dev libudev-dev libv4l-dev
+
+    - name: Clone Patched FFmpeg
+      run: |
+        git clone https://github.com/Kwiboo/FFmpeg.git -b v4l2request-2024-v2 ffmpeg-hw
+
+    - name: Configure
+      run: |
+        cd ffmpeg-hw
+        ./configure \
+          --enable-v4l2-request \
+          --enable-libdrm \
+          --enable-libudev \
+          --disable-shared \
+          --enable-static \
+          --disable-doc \
+          --disable-debug
+
+    - name: Make
+      run: |
+        cd ffmpeg-hw
+        make -j$(nproc)
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ffmpeg-arm64-static
+        path: ffmpeg-hw/ffmpeg
