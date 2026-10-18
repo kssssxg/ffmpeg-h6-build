@@ -72,7 +72,7 @@ jobs:
           -Dpulse=disabled -Djack=disabled \
           -Dvaapi=disabled -Dvdpau=disabled -Dvulkan=disabled -Dshaderc=disabled \
           -Dx11=disabled -Dxv=disabled \
-          -Dgl=enabled -Dgbm=enabled -Ddrm=enabled -Dwayland=enabled \
+          -Dgl=enabled -Dgbm=enabled -Ddrm=enabled -Dwayland=disabled \
           -Dmanpage-build=disabled -Dhtml-build=disabled -Dpdf-build=disabled
         ninja -C build
 
