@@ -17,7 +17,7 @@ jobs:
           libdrm-dev libudev-dev libv4l-dev \
           libass-dev liblcms2-dev libjpeg-dev \
           libegl1-mesa-dev libgbm-dev libwayland-dev wayland-protocols \
-          libasound2-dev cmake python3-pip
+          libasound2-dev cmake python3-pip libshaderc-dev libunwind-dev
 
     - name: Build libplacebo v7.360.1
       run: |
